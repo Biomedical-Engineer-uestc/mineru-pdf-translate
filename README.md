@@ -85,6 +85,27 @@ PDF
 
 > 完全离线部署可以预先准备 wheelhouse 和模型目录，见 `config.json` 的路径配置。
 
+### 作为插件安装（可选）
+
+本仓库同时可以打包成 ZCode 插件，从插件市场安装，而不是手动放技能目录：
+
+```bash
+python build_plugin.py --version 1.0.0
+```
+
+产物在 `dist/`：
+
+```text
+dist/
+├── pdf-translate/            插件目录
+├── pdf-translate-plugin.zip  可分发的插件包
+└── marketplace.json          本地测试用市场清单
+```
+
+在应用里打开 **插件市场 → 添加 → 添加插件市场**，粘贴 `dist` 目录的绝对路径，即可在「Personal」下看到并安装。
+
+安装后仍需在插件目录里运行一次 `setup.bat` 准备 MinerU 等依赖。
+
 ## 使用
 
 ### 让 Agent 来做（推荐）

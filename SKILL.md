@@ -17,7 +17,7 @@ description: 把英文 PDF 论文翻译成中文并生成排版好的中文 PDF�
 
 ## 依赖与安装
 
-首次使用前必须装好环境。如果 `scripts/prepare.py` 报"找不到 mineru-kit"，让用户运行仓库根目录的 `setup.bat`（右键以 PowerShell 运行）。它会自动安装：
+首次使用前必须装好环境。如果 `scripts/prepare.py` 报"找不到 mineru-kit"，让用户运行技能目录下的 `setup.bat`（即本 SKILL.md 所在目录，右键以 PowerShell 运行）。它会自动安装：
 
 | 组件 | 用途 | 体积 |
 |---|---|---|

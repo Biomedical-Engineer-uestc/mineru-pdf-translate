@@ -14,3 +14,6 @@ chunks/
 translated/
 final/
 *.log
+
+# 插件打包产物
+dist/
