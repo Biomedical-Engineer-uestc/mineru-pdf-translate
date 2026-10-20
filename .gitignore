@@ -1,0 +1,16 @@
+# 运行配置（由 setup.ps1 自动生成）
+config.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# 运行产物
+*_translate/
+raw/
+chunks/
+translated/
+final/
+*.log

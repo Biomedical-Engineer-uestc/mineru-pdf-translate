@@ -1,0 +1,28 @@
+pdf-translate
+Copyright (c) 2026 Biomedical-Engineer-uestc
+
+This product includes third-party software:
+
+--------------------------------------------------------------------------------
+MinerU
+https://github.com/opendatalab/MinerU
+Copyright (c) OpenDataLab
+
+Licensed under the Apache License, Version 2.0, with additional terms.
+The unmodified wheel mineru-4.0.12-py3-none-any.whl is redistributed in the
+vendor/ directory of this repository. The full license text, including the
+additional terms, is provided in vendor/mineru-LICENSE.md.
+
+pdf-translate does not modify MinerU. It invokes the mineru-kit command-line
+tool as a separate process.
+--------------------------------------------------------------------------------
+
+pandoc
+https://pandoc.org
+Licensed under GPL-2.0-or-later. It is downloaded at install time by setup.ps1
+and is NOT distributed with this repository.
+
+Microsoft Edge / Google Chrome
+Used as a system-provided HTML-to-PDF renderer. Not distributed with this
+repository.
+--------------------------------------------------------------------------------
