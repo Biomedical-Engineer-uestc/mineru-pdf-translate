@@ -8,7 +8,7 @@
         "source": "url",
         "type": "zip",
         "url": "https://github.com/Biomedical-Engineer-uestc/mineru-pdf-translate/releases/download/v1.1.0/pdf-translate-plugin.zip",
-        "sha256": "69efc339952c283a42f9fa1b6343042484c8a0841f7b8b79e6949cc8a896363b",
+        "sha256": "96227abbb69abecb8734c44cc60bb0150f6d32d1f21c952b1748a1f56dbd3529",
         "path": "pdf-translate"
       },
       "version": "1.1.0",
