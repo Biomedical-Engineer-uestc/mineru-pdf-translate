@@ -97,7 +97,7 @@ PDF
 本仓库同时可以打包成 ZCode 插件，从插件市场安装，而不是手动放技能目录：
 
 ```bash
-python build_plugin.py --version 1.1.0
+python build_plugin.py --version 1.1.1
 ```
 
 产物在 `dist/`：
@@ -141,7 +141,7 @@ python scripts/build.py "论文_translate"
 
 产物在 `论文_translate/final/`：`论文.zh.md`、`论文.zh.html`、`论文.zh.pdf`。
 
-构建会重新校验，遇到缺译文、FAIL 或无法恢复的占位符会在写出前停止，不用英文原文补位。WARN 允许构建，但仍须核对。作者/机构等完整英文段落可在 manifest 对应块中添加 `verbatim_paragraphs`，每项填写精确 `text` 和 `reason`，详见 SKILL.md。漏译检查是启发式规则，不能替代语义审阅。
+构建会重新校验，遇到缺译文、FAIL 或无法恢复的占位符会在写出前停止，不用英文原文补位。WARN 允许构建，但仍须核对。首页的作者行和编号机构行由 prepare 自动登记为原文保留，无需手动处理；脚注、通讯信息、关键词一般应当翻译，若决定保留英文再手动加入 `verbatim_paragraphs`（每项填写精确 `text` 和 `reason`），详见 SKILL.md。漏译检查是启发式规则，不能替代语义审阅。
 
 更换输入文件、页码范围或解析档位时使用新的 `--work` 目录，避免复用旧解析。参考文献边界依赖 Markdown 标题，须对照原文核对；旧工作目录需重新准备才能修复此前误划入参考文献的正文。
 

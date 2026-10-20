@@ -220,6 +220,54 @@ def pack_sections(sections: list[str], max_chars: int) -> list[str]:
 # --------------------------------------------------------------------------
 # 主流程
 # --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
+# 首页原文保留清单
+# --------------------------------------------------------------------------
+CJK_CHAR_RE = re.compile(r"[\u4e00-\u9fff]")
+PLACEHOLDER_RE = re.compile(r"\[\[[A-Z]+:\d+\]\]")
+AFFILIATION_RE = re.compile(r"^\d{1,2}[\s.]+")
+
+
+def frontmatter_exemptions(body: str, chunks: list[str]) -> dict[int, list[dict]]:
+    """把首页的作者行和编号机构行登记为原文保留段落。
+
+    只处理第一个二级标题之前的内容，并且只认两种明确形态：
+    标题后紧跟的作者行，以及 "1 School of..." 这类带编号的单位行。
+    脚注、通讯信息、关键词不在此列——它们通常应当翻译，是否保留由译者决定。
+
+    豁免要求译文与原文完全一致，所以一旦改动这些段落，校验仍会报错。
+    """
+    match = re.search(r"^##\s+\S", body, re.MULTILINE)
+    front = body[: match.start()] if match else body
+    paragraphs = [p.strip() for p in re.split(r"\n\s*\n", front) if p.strip()]
+
+    items: list[dict] = []
+    after_title = False
+    authors_taken = False
+    for para in paragraphs:
+        if para.startswith("# "):
+            after_title = True
+            continue
+        if not after_title or CJK_CHAR_RE.search(para):
+            continue
+
+        if not authors_taken and len(para) < 400 and "^" in para and not para.rstrip().endswith("."):
+            items.append({"text": para, "reason": "作者姓名与上标"})
+            authors_taken = True
+            continue
+
+        plain = PLACEHOLDER_RE.sub("", para).strip()
+        if AFFILIATION_RE.match(plain):
+            items.append({"text": para, "reason": "作者机构原名"})
+
+    by_chunk: dict[int, list[dict]] = {}
+    for index, text in enumerate(chunks):
+        keep = [item for item in items if item["text"] in text]
+        if keep:
+            by_chunk[index] = keep
+    return by_chunk
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="PDF 论文翻译流水线 - 准备阶段")
     ap.add_argument("pdf", type=Path, help="输入的 PDF 文件")
@@ -250,6 +298,7 @@ def main() -> None:
 
     print("[3/4] 分块…")
     chunks = pack_sections(split_sections(body), MAX_CHUNK_CHARS)
+    exemptions = frontmatter_exemptions(body, chunks)
     chunk_dir = work / "chunks"
     if chunk_dir.exists():
         shutil.rmtree(chunk_dir)
@@ -268,13 +317,16 @@ def main() -> None:
     for i, text in enumerate(chunks):
         name = f"chunk_{i:02d}"
         (chunk_dir / f"{name}.md").write_text(text + "\n", encoding="utf-8")
-        manifest["chunks"].append({
+        entry = {
             "id": name,
             "file": f"chunks/{name}.md",
             "chars": len(text),
             "placeholders": ph.tokenize(text),
             "headings": len([l for l in text.split("\n") if l.strip().startswith("#")]),
-        })
+        }
+        if i in exemptions:
+            entry["verbatim_paragraphs"] = exemptions[i]
+        manifest["chunks"].append(entry)
 
     translated_dir = work / "translated"
     translated_dir.mkdir(exist_ok=True)
@@ -310,6 +362,9 @@ def main() -> None:
     print(f"      文本块          {len(chunks)} 个 → chunks/chunk_00.md …")
     print(f"      正文字符        {total_chars}（约 {round(total_chars/4)} tokens）")
     print(f"      占位符          图片 {ph.counters['FIG']} / 公式 {ph.counters['EQ']} / 表格 {ph.counters['TABLE']}")
+    exempt_total = sum(len(v) for v in exemptions.values())
+    if exempt_total:
+        print(f"      首页保留段落    {exempt_total} 条（作者行与编号机构行，已自动登记豁免）")
     print(f"      参考文献        {len(refs)} 字符（原样保留，不翻译）")
     print()
     print("下一步：逐个翻译 chunks/*.md，结果写入 translated/<同名>.md")

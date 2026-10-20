@@ -7,11 +7,11 @@
       "source": {
         "source": "url",
         "type": "zip",
-        "url": "https://github.com/Biomedical-Engineer-uestc/mineru-pdf-translate/releases/download/v1.1.0/pdf-translate-plugin.zip",
-        "sha256": "96227abbb69abecb8734c44cc60bb0150f6d32d1f21c952b1748a1f56dbd3529",
+        "url": "https://github.com/Biomedical-Engineer-uestc/mineru-pdf-translate/releases/download/v1.1.1/pdf-translate-plugin.zip",
+        "sha256": "3004b14434aec494cb7c702e1fd8b3cff4c0534e6ff93eb7f15d9127bbabefd3",
         "path": "pdf-translate"
       },
-      "version": "1.1.0",
+      "version": "1.1.1",
       "description": "用 MinerU 提取论文，翻译文字并生成重新排版的中文 PDF。",
       "displayName": "PDF 论文翻译",
       "displayName_i18n": {
