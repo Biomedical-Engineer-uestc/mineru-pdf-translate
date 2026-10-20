@@ -20,8 +20,9 @@ import time
 from pathlib import Path
 
 from config import find_edge, find_pandoc
+from check import print_report, validate_work
 
-TOKEN_RE = re.compile(r"\[\[(EQ|FIG|TABLE):(\d{3})\]\]")
+TOKEN_RE = re.compile(r"\[\[(EQ|FIG|TABLE|REF):(\d{3,})\]\]")
 
 CSS = """
 @page { size: A4; margin: 2.2cm 2.2cm 2.4cm 2.2cm; }
@@ -126,16 +127,34 @@ def find_tool(candidates, name: str) -> str:
 
 
 def restore(text: str, placeholders: dict) -> str:
-    def repl(m: re.Match) -> str:
-        key = f"{m.group(1)}:{m.group(2)}"
+    def expand(key: str, stack: tuple[str, ...]) -> str:
+        if key in stack:
+            raise ValueError(f"占位符循环引用: {key}")
         entry = placeholders.get(key)
         if entry is None:
-            return m.group(0)
+            raise ValueError(f"找不到占位符: {key}")
         if entry["kind"] == "FIG":
             return f"![]({entry['payload']})"
-        return entry["payload"]
+        return TOKEN_RE.sub(
+            lambda m: expand(f"{m.group(1)}:{m.group(2)}", (*stack, key)),
+            entry["payload"],
+        )
 
-    return TOKEN_RE.sub(repl, text)
+    return TOKEN_RE.sub(lambda m: expand(f"{m.group(1)}:{m.group(2)}", ()), text)
+
+
+def assemble(work: Path, manifest: dict) -> str:
+    parts = [
+        (work / "translated" / f"{ch['id']}.md").read_text(encoding="utf-8").strip("\n")
+        for ch in manifest["chunks"]
+    ]
+    body = "\n\n".join(parts)
+    # Legacy work directories have no REF tokens and stored references separately.
+    if not any(p["kind"] == "REF" for p in manifest["placeholders"].values()):
+        refs = work / "references.md"
+        if refs.exists():
+            body += "\n\n" + refs.read_text(encoding="utf-8")
+    return restore(body, manifest["placeholders"])
 
 
 def main() -> None:
@@ -149,30 +168,16 @@ def main() -> None:
     if not manifest_path.exists():
         sys.exit(f"找不到 {manifest_path}，请先运行 prepare.py")
 
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    placeholders = manifest["placeholders"]
-
-    print("[1/4] 合并译文并还原占位符…")
-    parts: list[str] = []
-    fallback: list[str] = []
-    for ch in manifest["chunks"]:
-        cid = ch["id"]
-        dst = work / "translated" / f"{cid}.md"
-        if dst.exists():
-            parts.append(dst.read_text(encoding="utf-8", errors="replace").strip("\n"))
-        else:
-            fallback.append(cid)
-            parts.append((work / ch["file"]).read_text(encoding="utf-8", errors="replace").strip("\n"))
-
-    if fallback:
-        print(f"      ⚠ 以下块没有译文，已用原文代替: {', '.join(fallback)}")
-
-    body = "\n\n".join(parts)
-    body = restore(body, placeholders)
-
-    refs_path = work / "references.md"
-    if refs_path.exists():
-        body += "\n\n" + refs_path.read_text(encoding="utf-8").strip("\n") + "\n"
+    try:
+        report = validate_work(work)
+        print_report(work, report)
+        if report["failed"] or report["missing"]:
+            sys.exit("构建已停止：请先修复校验失败或缺失的译文；不会用英文原文代替。")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        print("[1/4] 合并译文并还原占位符…")
+        body = assemble(work, manifest)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        sys.exit(f"构建前检查失败: {exc}")
 
     final_dir = work / "final"
     final_dir.mkdir(exist_ok=True)
@@ -255,7 +260,7 @@ def main() -> None:
             break
         time.sleep(0.5)
 
-    if not pdf_out.exists():
+    if not pdf_out.exists() or pdf_out.stat().st_size == 0:
         print(proc.stderr[-2000:])
         sys.exit(f"PDF 生成失败。可以手动打开 {html_out} 用浏览器打印。")
 

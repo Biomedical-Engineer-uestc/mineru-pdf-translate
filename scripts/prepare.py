@@ -25,9 +25,10 @@ from config import find_mineru_kit
 MAX_CHUNK_CHARS = 6000  # 单块上限，控制单次翻译的输出长度
 
 REFERENCE_HEADING = re.compile(
-    r"^#{1,3}\s*(references|bibliography|literature cited|works cited|参考文献)\s*$",
-    re.IGNORECASE | re.MULTILINE,
+    r"(?:\d+(?:\.\d+)*[.)]?\s+)?(?:references|bibliography|literature cited|works cited|参考文献)",
+    re.IGNORECASE,
 )
+HEADING_RE = re.compile(r"^#{1,6}[ \t]+(.+?)[ \t]*#*[ \t]*$", re.MULTILINE)
 HTML_TAG = re.compile(r"</?[a-zA-Z][^>]*>")
 
 
@@ -75,7 +76,7 @@ def run_mineru(pdf: Path, work: Path, tier: str, pages: str | None) -> Path:
 class Placeholders:
     def __init__(self) -> None:
         self.store: dict[str, dict] = {}
-        self.counters = {"EQ": 0, "FIG": 0, "TABLE": 0}
+        self.counters = {"EQ": 0, "FIG": 0, "TABLE": 0, "REF": 0}
 
     def add(self, kind: str, payload: str) -> str:
         self.counters[kind] += 1
@@ -84,7 +85,7 @@ class Placeholders:
         return f"[[{key}]]"
 
     def tokenize(self, text: str) -> list[str]:
-        return re.findall(r"\[\[(?:EQ|FIG|TABLE):\d{3}\]\]", text)
+        return re.findall(r"\[\[(?:EQ|FIG|TABLE|REF):\d{3,}\]\]", text)
 
 
 def protect_display_math(md: str, ph: Placeholders) -> str:
@@ -141,11 +142,30 @@ def normalize_html(md: str) -> str:
 # --------------------------------------------------------------------------
 # 参考文献切分与分块
 # --------------------------------------------------------------------------
-def split_references(md: str) -> tuple[str, str]:
-    m = REFERENCE_HEADING.search(md)
-    if not m:
+def split_references(md: str, ph: Placeholders | None = None) -> tuple[str, str]:
+    """Bound each bibliography by the next heading; REF preserves reading order.
+
+    Conservatively stop at any heading level, since OCR may misassign levels.
+    Unheaded boundaries cannot be inferred reliably and require source review.
+    """
+    headings = list(HEADING_RE.finditer(md))
+    parts, refs = [], []
+    cursor = 0
+    for index, heading in enumerate(headings):
+        title = heading.group(1).strip().strip("*_").strip()
+        if not REFERENCE_HEADING.fullmatch(title):
+            continue
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(md)
+        block = md[heading.start():end].strip() + "\n"
+        parts.append(md[cursor:heading.start()])
+        if ph is not None:
+            parts.append(ph.add("REF", block) + "\n\n")
+        refs.append(block)
+        cursor = end
+    if not refs:
         return md, ""
-    return md[: m.start()].rstrip() + "\n", md[m.start():].strip() + "\n"
+    parts.append(md[cursor:])
+    return "".join(parts), "\n".join(refs)
 
 
 def split_sections(md: str) -> list[str]:
@@ -223,9 +243,9 @@ def main() -> None:
     md = protect_images(md, ph)
     md = normalize_html(md)
 
-    body, refs = split_references(md)
+    body, refs = split_references(md, ph)
+    (work / "references.md").write_text(refs, encoding="utf-8")
     if refs:
-        (work / "references.md").write_text(refs, encoding="utf-8")
         print(f"      参考文献已单独保存（{len(refs)} 字符，不翻译）")
 
     print("[3/4] 分块…")

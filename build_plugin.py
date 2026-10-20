@@ -6,7 +6,7 @@
     dist/marketplace.json         本地测试用 marketplace 清单
 
 用法:
-    python build_plugin.py [--version 1.0.0]
+    python build_plugin.py [--version 1.0.1]
 """
 
 from __future__ import annotations
@@ -22,17 +22,17 @@ ROOT = Path(__file__).resolve().parent
 DIST = ROOT / "dist"
 PLUGIN_NAME = "pdf-translate"
 COPY_ITEMS = ["SKILL.md", "README.md", "LICENSE", "NOTICE", "setup.bat", "setup.ps1",
-              "scripts", "vendor"]
+              "scripts", "tests", "vendor"]
 
 PLUGIN_JSON = {
     "name": PLUGIN_NAME,
     "version": "0.0.0",
-    "description": "用 MinerU 把英文 PDF 论文翻译成中文 PDF，模型全程不看图，省 2-3 倍 token",
+    "description": "用 MinerU 提取论文，翻译文字、校验公式和漏译，并生成重新排版的中文 PDF。",
     "description_i18n": {
         "en": "Translate English PDF papers into typeset Chinese PDFs with MinerU. "
-              "The model only reads text, never images - 2-3x fewer tokens.",
+              "Translate extracted text, validate content, and preserve figures and formulas.",
         "zh-CN": "用 MinerU 把英文 PDF 论文翻译成中文 PDF。图片、公式、表格走占位符，"
-                 "模型只翻译文字，省 2-3 倍 token。",
+                 "翻译阶段处理文字，验收阶段核对页面。",
     },
     "author": {"name": "Biomedical-Engineer-uestc"},
     "license": "MIT",
@@ -50,8 +50,12 @@ def sha256(path: Path) -> str:
 
 
 def build(version: str) -> None:
+    # Verify the recursive deletion target before rebuilding generated output.
+    resolved_dist = DIST.resolve()
+    if resolved_dist.parent != ROOT.resolve() or resolved_dist.name != "dist":
+        raise ValueError(f"Unsafe distribution target: {resolved_dist}")
     if DIST.exists():
-        shutil.rmtree(DIST)
+        shutil.rmtree(resolved_dist)
     plugin_dir = DIST / PLUGIN_NAME
     skill_dir = plugin_dir / "skills" / PLUGIN_NAME
     skill_dir.mkdir(parents=True)
@@ -110,7 +114,7 @@ def build(version: str) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="打包 ZCode 插件")
-    ap.add_argument("--version", default="1.0.0")
+    ap.add_argument("--version", default="1.0.1")
     args = ap.parse_args()
     build(args.version)
 
