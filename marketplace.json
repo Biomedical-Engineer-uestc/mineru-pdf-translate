@@ -1,0 +1,36 @@
+{
+  "name": "pdf-translate-market",
+  "description": "PDF 论文翻译技能的插件市场",
+  "plugins": [
+    {
+      "name": "pdf-translate",
+      "source": {
+        "source": "url",
+        "type": "zip",
+        "url": "https://github.com/Biomedical-Engineer-uestc/mineru-pdf-translate/releases/download/v1.0.0/pdf-translate-plugin.zip",
+        "sha256": "f7ef5be29ccfa1f4f93b93ee7dec945c53d2e9cf44a6b8c040b9a7fd48a2744f",
+        "path": "pdf-translate"
+      },
+      "version": "1.0.0",
+      "description": "用 MinerU 把英文 PDF 论文翻译成中文 PDF，模型全程不看图，省 2-3 倍 token",
+      "displayName": "PDF 论文翻译",
+      "displayName_i18n": {
+        "zh-CN": "PDF 论文翻译",
+        "en": "PDF Paper Translator"
+      },
+      "description_i18n": {
+        "zh-CN": "用 MinerU 把英文 PDF 论文翻译成中文 PDF。图片、公式、表格走占位符，模型只翻译文字，省 2-3 倍 token，并自动生成中文学术排版。",
+        "en": "Translate English PDF papers into typeset Chinese PDFs with MinerU. Images, formulas and tables become placeholders, so the model only reads text: 2-3x fewer tokens, and a clean academic layout is generated automatically."
+      },
+      "category": "productivity",
+      "keywords": [
+        "pdf",
+        "translation",
+        "mineru",
+        "academic",
+        "chinese",
+        "token-saving"
+      ]
+    }
+  ]
+}
